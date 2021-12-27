@@ -1,3 +1,4 @@
+from pprint import pprint
 import requests
 from SimpleScore import SimpleScore
 
@@ -23,14 +24,19 @@ def get_username(user_id, headers):
     response = requests.get(f'{API_URL}/users/{user_id}/osu', headers=headers)
     return response.json()['username']
 
+def get_beatmap(beatmap_id, headers):
+    response = requests.get(f'{API_URL}/beatmaps/{beatmap_id}', headers=headers)
+    return response.json()
+
 # PARAMS: user_id (Integer), headers (valid osu!api v2 headers)
 # RETURN: top 100 of player with given ID (Score[]) <https://osu.ppy.sh/docs/index.html?javascript#score>
 def get_top_100(user_id, headers):
     params = {
-        'limit': '100'
+        'limit': '100',
+        'mode': 'osu'
     }
     response = requests.get(f'{API_URL}/users/{user_id}/scores/best', headers=headers, params=params)
-    return response.json();
+    return response.json()
 
 # PARAMS: user_id (Integer), headers (valid osu!api v2 headers)
 # RETURN: top 100 of player with given ID (SimpleScore[])
@@ -39,12 +45,21 @@ def get_top_100_simple(user_id, headers):
     username = get_username(user_id, headers)
     response = get_top_100(user_id, headers)
     for i in range(0, 100):
-        score = response[i]
+        # Make sure user has 100 scores
+        try:
+            score = response[i]
+        except IndexError:
+            print('IndexError: Player %s does not have a %sth score' % (user_id, str(i+1)))
+            break
+
         mods = score['mods']
         mods = parse_mods(mods)
         beatmap = score['beatmapset']['title']
+        diffname = score['beatmap']['version']
         pp = score['pp']
-        simple_score = SimpleScore(username, mods, beatmap, pp)
+        acc = score['accuracy']
+        simple_score = SimpleScore(username, mods, beatmap, diffname, pp, acc)
+
         simple_array.append(simple_score)
     return simple_array
 
@@ -52,6 +67,10 @@ def get_top_100_simple(user_id, headers):
 # RETURN: concatenated string of mods (e.g. ['HD', 'DT'] -> 'HDDT')
 def parse_mods(mods):
     mod_string = ''
-    for mod in mods:
-        mod_string = mod_string + mod
+    # Empty mod array => nomod
+    if not mods: 
+        mod_string = mod_string + 'NM'
+    else: 
+        for m in mods:
+            mod_string = mod_string + m
     return mod_string
