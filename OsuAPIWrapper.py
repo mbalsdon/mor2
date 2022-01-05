@@ -1,76 +1,112 @@
-from pprint import pprint
 import requests
-from SimpleScore import SimpleScore
+import csv
+import config as config
 
-API_URL = "https://osu.ppy.sh/api/v2"
-TOKEN_URL = "https://osu.ppy.sh/oauth/token"
-AUTH_CODE_URL = "https://osu.ppy.sh/oauth/authorize"
+import time
 
-# RETURN: OAuth2 access token
-def get_token(client_id, client_secret, grant_type, redirect_uri, scope):
-    data = {
-        'client_id': client_id,
-        'client_secret': client_secret,
-        'grant_type': grant_type,
-        'redirect_uri': redirect_uri,
-        'scope': scope
-    }
-    response = requests.post(TOKEN_URL, data=data)
-    return response.json().get('access_token')
+class OsuAPIWrapper():
+    API_URL = "https://osu.ppy.sh/api/v2"
+    TOKEN_URL = "https://osu.ppy.sh/oauth/token"
+    AUTH_CODE_URL = "https://osu.ppy.sh/oauth/authorize"
 
-# PARAMS: user_id (Integer), headers (valid osu!api v2 headers)
-# RETURN: username of player with given ID (String)
-def get_username(user_id, headers):
-    response = requests.get(f'{API_URL}/users/{user_id}/osu', headers=headers)
-    return response.json()['username']
+    def __init__(self):
+        data = {
+            'client_id': config.OSU_API_CLIENT_ID,
+            'client_secret': config.OSU_API_CLIENT_SECRET,
+            'grant_type': 'client_credentials',
+            'redirect_uri': config.OSU_API_REDIRECT_URI,
+            'scope': 'public'
+        }
+        response = requests.post(self.TOKEN_URL, data=data)
+        self.token = response.json().get('access_token')
 
-def get_beatmap(beatmap_id, headers):
-    response = requests.get(f'{API_URL}/beatmaps/{beatmap_id}', headers=headers)
-    return response.json()
+    def get_username(self, user_id, headers):
+        response = requests.get(f'{self.API_URL}/users/{user_id}/osu', headers=headers)
+        return response.json()['username']
 
-# PARAMS: user_id (Integer), headers (valid osu!api v2 headers)
-# RETURN: top 100 of player with given ID (Score[]) <https://osu.ppy.sh/docs/index.html?javascript#score>
-def get_top_100(user_id, headers):
-    params = {
-        'limit': '100',
-        'mode': 'osu'
-    }
-    response = requests.get(f'{API_URL}/users/{user_id}/scores/best', headers=headers, params=params)
-    return response.json()
+    def get_beatmap(self, beatmap_id, headers):
+        response = requests.get(f'{self.API_URL}/beatmaps/{beatmap_id}', headers=headers)
+        return response.json()
 
-# PARAMS: user_id (Integer), headers (valid osu!api v2 headers)
-# RETURN: top 100 of player with given ID (SimpleScore[])
-def get_top_100_simple(user_id, headers):
-    simple_array = []
-    username = get_username(user_id, headers)
-    response = get_top_100(user_id, headers)
-    for i in range(0, 100):
-        # Make sure user has 100 scores
-        try:
-            score = response[i]
-        except IndexError:
-            print('IndexError: Player %s does not have a %sth score' % (user_id, str(i+1)))
-            break
+    def get_top_100(self, user_id, headers):
+        params = {
+            'limit': '100',
+            'mode': 'osu'
+        }
+        response = requests.get(f'{self.API_URL}/users/{user_id}/scores/best', headers=headers, params=params)
+        return response.json()
 
-        mods = score['mods']
-        mods = parse_mods(mods)
-        beatmap = score['beatmapset']['title']
-        diffname = score['beatmap']['version']
-        pp = score['pp']
-        acc = score['accuracy']
-        simple_score = SimpleScore(username, mods, beatmap, diffname, pp, acc)
+    def get_top_100_simple(self, user_id, headers):
+        def parse_mods(mods):
+            mod_string = ''
+            if not mods: 
+                mod_string = mod_string + 'NM'
+            else: 
+                for m in mods:
+                    mod_string = mod_string + m
+            return mod_string
 
-        simple_array.append(simple_score)
-    return simple_array
+        score_array = []
+        response = self.get_top_100(user_id, headers)
+        username = self.get_username(user_id, headers)
+        for i in range(0, 100):
+            try:
+                score = response[i]
+            except IndexError:
+                print('IndexError: Player %s does not have a %sth score' % (user_id, str(i+1)))
+                break
+            formatted_score = (username,
+                                parse_mods(score['mods']),
+                                score['beatmapset']['title'],
+                                score['beatmap']['version'],
+                                score['pp'],
+                                score['accuracy'])
+            score_array.append(formatted_score)
 
-# PARAMS: mods (string array)
-# RETURN: concatenated string of mods (e.g. ['HD', 'DT'] -> 'HDDT')
-def parse_mods(mods):
-    mod_string = ''
-    # Empty mod array => nomod
-    if not mods: 
-        mod_string = mod_string + 'NM'
-    else: 
-        for m in mods:
-            mod_string = mod_string + m
-    return mod_string
+        return score_array
+
+    def get_player_ids(self, filepath):
+        player_ids = []
+        with open(filepath, mode='r', newline='\n') as player_file:
+            player_reader = csv.reader(player_file, delimiter=',')
+            for row in player_reader:
+                # Skip comment rows
+                if row[0].startswith('#'):
+                    continue
+                player_ids.append(int(row[0]))
+
+        return player_ids
+
+    def get_top_plays(self, player_ids, headers):
+        scores = []
+        for id in player_ids:
+            print(f'Grabbing {id}\'s top plays...')
+            scores.extend(self.get_top_100_simple(id, headers))
+        scores.sort(reverse=True, key=lambda s: s[4])
+        score_dict = {}
+        for s in scores:
+            mods = self.merge_mods(s[1])
+            if mods in score_dict:
+                score_dict[mods].append(s)
+            else:
+                score_dict[mods] = [s]
+
+        return score_dict
+
+    def merge_mods(self, mods):
+        # turn NC into DT
+        if mods.find('NC') != -1:
+            mods = mods.replace('NC', 'DT')
+        # get rid of NF, SO, SD, PF
+        if mods.find('NF') != -1:
+            mods = mods.replace('NF', '')
+        if mods.find('SO') != -1:
+            mods = mods.replace('SO', '')
+        if mods.find('SD') != -1:
+            mods = mods.replace('SD', '')
+        if mods.find('PF') != -1:
+            mods = mods.replace('PF', '')
+        # if it was NM with NF/SO/SD/PF, add it back in (bit of a bandaid fix)
+        if mods == '':
+            mods = 'NM'
+        return mods
