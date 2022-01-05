@@ -1,0 +1,6 @@
+env/
+config.py
+creds.json
+testplayerlist.csv
+playerlist.csv
+__pycache__
