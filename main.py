@@ -39,10 +39,9 @@ def main():
 if __name__ == '__main__':
     main()
 
-# TODO: complete refactoring (push to github)
-# TODO: method signatures
 # TODO: functionality for updating main sheet, email needs to be authorized on it
 # TODO: make script run w user input (email, updatemain?, etc)
 # TODO: "update leaderboard" scripts (need to consider submitted scores)
 # TODO: score submission: goes to own worksheet, somehow need to insert into archive part
-# TODO: 
+# TODO: share script
+# TOOD:

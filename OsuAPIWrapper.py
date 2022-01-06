@@ -20,14 +20,20 @@ class OsuAPIWrapper():
         response = requests.post(self.TOKEN_URL, data=data)
         self.token = response.json().get('access_token')
 
+    # PARAMS: osu! user ID (int), valid osu!api v2 headers
+    # RETURN: the associated username (str)
     def get_username(self, user_id, headers):
         response = requests.get(f'{self.API_URL}/users/{user_id}/osu', headers=headers)
         return response.json()['username']
 
+    # PARAMS: osu! beatmap ID (int), valid osu!api v2 headers
+    # RETURN: the associated beatmap (Beatmap object)
     def get_beatmap(self, beatmap_id, headers):
         response = requests.get(f'{self.API_URL}/beatmaps/{beatmap_id}', headers=headers)
         return response.json()
 
+    # PARAMS: osu! user ID (int), valid osu!api v2 headers
+    # RETURN: the top 100 scores of the user (array of Score objects)
     def get_top_100(self, user_id, headers):
         params = {
             'limit': '100',
@@ -36,7 +42,11 @@ class OsuAPIWrapper():
         response = requests.get(f'{self.API_URL}/users/{user_id}/scores/best', headers=headers, params=params)
         return response.json()
 
+    # PARAMS: osu! user ID (int), valid osu!api v2 headers
+    # RETURN: the top 100 scores of the user
+    #         (array of tuples: (username (str), mods (str), beatmap (str), diffname (str), pp (num), accuracy (num)))
     def get_top_100_simple(self, user_id, headers):
+        # concatenates the array of mods into a string; if the array is empty, returns the string 'NM'
         def parse_mods(mods):
             mod_string = ''
             if not mods: 
@@ -65,6 +75,8 @@ class OsuAPIWrapper():
 
         return score_array
 
+    # PARAMS: .csv file containing user IDs separated by newlines
+    # RETURN: user IDs (array of int)
     def get_player_ids(self, filepath):
         player_ids = []
         with open(filepath, mode='r', newline='\n') as player_file:
@@ -77,6 +89,8 @@ class OsuAPIWrapper():
 
         return player_ids
 
+    # PARAMS: user IDs (array of int), valid osu!api v2 headers
+    # RETURN: dict: keys = mod combos (str), vals = scores (array of tuples defined in get_top_100_simple)
     def get_top_plays(self, player_ids, headers):
         scores = []
         for id in player_ids:
@@ -93,6 +107,9 @@ class OsuAPIWrapper():
 
         return score_dict
 
+    # PARAMS: mod combo (str)
+    # RETURN: mod combo without NF/SO/SD/PF and with DT in place of NC (str)
+    # TODO: do this in get_top_100_simple() instead of get_top_plays to avoid the bandaid NM fix
     def merge_mods(self, mods):
         # turn NC into DT
         if mods.find('NC') != -1:
@@ -106,7 +123,7 @@ class OsuAPIWrapper():
             mods = mods.replace('SD', '')
         if mods.find('PF') != -1:
             mods = mods.replace('PF', '')
-        # if it was NM with NF/SO/SD/PF, add it back in (bit of a bandaid fix)
+        # if the play was nomod but had NF/SO/SD/PF we need to add 'NM'
         if mods == '':
             mods = 'NM'
         return mods

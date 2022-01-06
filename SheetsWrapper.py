@@ -8,7 +8,9 @@ class SheetsWrapper():
         creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
         self.client = gspread.authorize(creds)
 
-    # Thank you to 0e4ef622#2241 (on discord) for this function
+    # Thanks 0e4ef622#2241 (on discord) for this function
+    # PARAMS: column number (int)
+    # RETURN: column letter (str)
     def colname(self, n):
         # n += 1
         name = ""
@@ -22,11 +24,16 @@ class SheetsWrapper():
             n //= 26
         return name[::-1]
 
+    # PARAMS: title of sheet (str), email of sheet owner (str)
+    # RETURN: the created sheet (gspread sheet)
     def create_sheet(self, sheet_name, email):
         sheet = self.client.create(sheet_name)
         sheet.share(email, perm_type='user', role='owner', notify=True)
         return sheet
-     
+    
+    # Sets up the 1mod/2mod/3mod/4mod worksheets, ready for scores to be input to them
+    # PARAMS: the sheet to be edited (gspread sheet)
+    # RETURN: the created worksheets (array of gspread worksheets)
     def init_mod_worksheets(self, sheet):
         num_rows = '10000'
         num_cols = '100'
@@ -46,6 +53,8 @@ class SheetsWrapper():
 
         return [onemod_sheet, twomod_sheet, threemod_sheet, fourmod_sheet]
 
+    # PARAMS: dict of scores (defined in OsuAPIWrapper.py), worksheets to be edited (array of gspread worksheets)
+    # RETURN: nothing
     def scores_to_sheet(self, player_scores, worksheets):
         for k in player_scores:
             print(f'Putting {k} scores in the sheet...')
@@ -63,7 +72,9 @@ class SheetsWrapper():
             else:
                 raise KeyError('Key len != 2, 4, 6, 8')
 
-    # TODO: top 5 worst functions i've ever written (FIX)
+    # PARAMS: mod combo (str), number of scores with specified mod combo (int)
+    # RETURN: start column letter, end column letter, end row number (tuple: (str, str, int))
+    # TODO: top 10 worst functions i've ever written
     def get_str_vals(self, mods, num_scores):
         # https://docs.google.com/spreadsheets/d/1mXSpmGrdJukGwq5VpE9O9vuLJktu35mBR5TIHdK_Jl0/edit#gid=721483945 (by Magnus Cosmos)
         one = ['NM', 'DT', 'HR', 'HD', 'EZ', 'HT', 'FL']
@@ -80,43 +91,30 @@ class SheetsWrapper():
         
         if mods == one[0] or mods == two[0] or mods == three[0] or mods == four[0]:
             return str_vals(first, length)
-
         elif mods == one[1] or mods == two[1] or mods == three[1] or mods == four[1]:
             return str_vals(first+total, length+total)
-
         elif mods == one[2] or mods == two[2] or mods == three[2] or mods == four[2]:
             return str_vals(first+total*2, length+total*2)
-
         elif mods == one[3] or mods == two[3] or mods == three[3] or mods == four[3]:
             return str_vals(first+total*3, length+total*3)
-
         elif mods == one[4] or mods == two[4] or mods == three[4]:
             return str_vals(first+total*4, length+total*4)
-
         elif mods == one[5] or mods == two[5] or mods == three[5]:
             return str_vals(first+total*5, length+total*5)
-
         elif mods == one[6] or mods == two[6] or mods == three[6]:
             return str_vals(first+total*6, length+total*6)
-
         elif mods == two[7] or mods == three[7]:
             return str_vals(first+total*7, length+total*7)
-
         elif mods == two[8] or mods == three[8]:
             return str_vals(first+total*8, length+total*8)
-
         elif mods == two[9] or mods == three[9]:
             return str_vals(first+total*9, length+total*9)
-
         elif mods == two[10] or mods == three[10]:
             return str_vals(first+total*10, length+total*10)
-
         elif mods == two[11] or mods == three[11]:
             return str_vals(first+total*11, length+total*11)
-
         elif mods == two[12]:
             return str_vals(first+total*12, length+total*12)
-
         else:
             raise KeyError('Invalid mods parameter')
         
