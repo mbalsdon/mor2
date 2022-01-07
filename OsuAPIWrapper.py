@@ -127,3 +127,23 @@ class OsuAPIWrapper():
         if mods == '':
             mods = 'NM'
         return mods
+
+    # Converts the dict meant for the archive sheet to one for the main sheet.
+    # Merges beatmap/diffname, removes mods/acc data.
+    # PARAMS: dict: keys = mod combos (str), vals = scores (array of tuples defined in get_top_100_simple)
+    # RETURN: dict: keys = mod combos (str), 
+    #               vals = scores (array of tuples: (username (str), beatmap (str), pp (int)))
+    def archive_to_main(self, player_scores):
+        new_dict = {}
+        for k in player_scores:
+            new_dict[k] = []
+            for score in player_scores[k]:
+                player = score[0]
+                beatmap = '%s [%s]' % (score[2], score[3])
+                pp = round(score[4], 0)
+                score = (player, beatmap, pp)
+                new_dict[k].append(score)
+        
+        return new_dict
+
+    
