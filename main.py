@@ -17,8 +17,8 @@ def main():
 
     # Create the archive sheet
     print('Creating archive sheet...')
-    sheet_title = f'mouseonlyrecords archive {date.today().strftime("(%d %b %Y)")}'
-    user_email = 'm.mathewbalsdon@gmail.com' # TODO: paramaterize as user input
+    sheet_title = f'mouseonlyrecords archive {date.today().strftime("[%d %b %Y]").upper()}'
+    user_email = 'minermathew@gmail.com' # TODO: paramaterize as user input
     archive_sheet = sheets_api.create_sheet(sheet_title, user_email)
 
     # Create archive worksheets
@@ -44,17 +44,17 @@ def main():
                        main_sheet.worksheet('4MOD')]
     reformatted_player_scores = osu_api.archive_to_main(player_scores)
     sheets_api.scores_to_sheet(reformatted_player_scores, main_worksheets, 4, 8, 3, 1)
-
+    sheets_api.update_last_updated_tag(main_worksheets)
 
 if __name__ == '__main__':
     main()
 
-# TODO: add main sheet worksheet cols
-# TODO: last updated tag in main sheet
-# TODO: hyperlink beatmap+player in main sheet
-# TODO: less work done in main
+# TODO: less work done in main.py
 # TODO: make script run w user input (email, updatemain?, etc)
-# TODO: "update leaderboard" scripts (need to consider submitted scores)
-# TODO: score submission: goes to own worksheet, somehow need to insert into archive part
+# TODO: score submission script: goes to own worksheet in main, inserts in relevant worksheet
+# TODO: make it so script checks submitted scores sheet -> inserts into dict -> scores_to_sheet runs
+# TODO: "update leaderboard" scripts (looks @ worksheets)
 # TODO: share script
-# TOOD:
+# TODO: hyperlink beatmap+player in mainsheet
+# TODO: main page info tabs update, worksheet note
+# TODO: release ?

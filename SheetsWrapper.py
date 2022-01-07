@@ -1,5 +1,6 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from datetime import date
 
 class SheetsWrapper():
 
@@ -51,10 +52,10 @@ class SheetsWrapper():
             mod_sheet.update(col_range, [title_row * num_mod_combos])
             return mod_sheet
 
-        onemod_sheet = init_mod_ws('1mod', 7)
-        twomod_sheet = init_mod_ws('2mod', 13)
-        threemod_sheet = init_mod_ws('3mod', 12)
-        fourmod_sheet = init_mod_ws('4mod', 4)
+        onemod_sheet = init_mod_ws('1MOD', 7)
+        twomod_sheet = init_mod_ws('2MOD', 13)
+        threemod_sheet = init_mod_ws('3MOD', 12)
+        fourmod_sheet = init_mod_ws('4MOD', 4)
         # remove the default sheet
         sheet.del_worksheet(sheet.sheet1)
 
@@ -65,19 +66,27 @@ class SheetsWrapper():
     #         first col (int), first row (int), num. cols used per mod (int),
     #         num. blank cols between mods (int)
     def scores_to_sheet(self, player_scores, worksheets, first_col, first_row, length, space):
+
         for k in player_scores:
             print(f'Putting {k} scores in the sheet...')
             num_scores = str(len(player_scores[k]) + first_row - 1)
             str_vals = self.get_str_vals(k, num_scores, first_col, first_row, length, space)
             col_range = '%s%s:%s%s' % str_vals
+            size = len(col_range)
+            last_size = len(str_vals[3])
+            clear_col_range = col_range[:size - last_size] + '10000'
             # worksheets[(len(k)/2)-1].update(col_range, player_scores[k])
             if len(k) == 2:
+                worksheets[0].batch_clear([clear_col_range])
                 worksheets[0].update(col_range, player_scores[k])
             elif len(k) == 4:
+                worksheets[1].batch_clear([clear_col_range])
                 worksheets[1].update(col_range, player_scores[k])
             elif len(k) == 6:
+                worksheets[2].batch_clear([clear_col_range])
                 worksheets[2].update(col_range, player_scores[k])
             elif len(k) == 8:
+                worksheets[3].batch_clear([clear_col_range])
                 worksheets[3].update(col_range, player_scores[k])
             else:
                 raise KeyError('key len != 2/4/6/8')
@@ -127,3 +136,9 @@ class SheetsWrapper():
             return str_vals(first_col+total*12, last_col+total*12)
         else:
             raise KeyError('Invalid mods parameter')
+
+    # PARAMS: main sheet worksheets (array of gspread worksheet)
+    # RETURN: none
+    def update_last_updated_tag(self, main_worksheets):
+        for worksheet in main_worksheets:
+            worksheet.update('B6', f'LAST UPDATE: {date.today().strftime("%d %B %Y").upper()}')
