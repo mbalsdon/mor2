@@ -27,13 +27,19 @@ class OsuAPIWrapper():
         return response.json()['username']
 
     # PARAMS: osu! beatmap ID (int), valid osu!api v2 headers
-    # RETURN: the associated beatmap (Beatmap object)
+    # RETURN: the associated beatmap (JSON)
     def get_beatmap(self, beatmap_id, headers):
         response = requests.get(f'{self.API_URL}/beatmaps/{beatmap_id}', headers=headers)
         return response.json()
 
+    # PARAMS: osu! score ID (int), valid osu!api v2 headers
+    # RETURN: the associated score (JSON)
+    def get_score(self, score_id, headers):
+        response = requests.get(f'{self.API_URL}/scores/osu/{score_id}', headers=headers)
+        return response.json()
+
     # PARAMS: osu! user ID (int), valid osu!api v2 headers
-    # RETURN: the top 100 scores of the user (array of Score objects)
+    # RETURN: the top 100 scores of the user (array of JSON objects)
     def get_top_100(self, user_id, headers):
         params = {
             'limit': '100',
@@ -46,16 +52,6 @@ class OsuAPIWrapper():
     # RETURN: the top 100 scores of the user
     #         (array of tuples: (username (str), mods (str), beatmap (str), diffname (str), pp (num), accuracy (num)))
     def get_top_100_simple(self, user_id, headers):
-        # concatenates the array of mods into a string; if the array is empty, returns the string 'NM'
-        def parse_mods(mods):
-            mod_string = ''
-            if not mods: 
-                mod_string = mod_string + 'NM'
-            else: 
-                for m in mods:
-                    mod_string = mod_string + m
-            return mod_string
-
         score_array = []
         response = self.get_top_100(user_id, headers)
         username = self.get_username(user_id, headers)
@@ -66,7 +62,7 @@ class OsuAPIWrapper():
                 print('IndexError: Player %s does not have a %sth score' % (user_id, str(i+1)))
                 break
             formatted_score = (username,
-                                parse_mods(score['mods']),
+                                self.parse_mods(score['mods']),
                                 score['beatmapset']['title'],
                                 score['beatmap']['version'],
                                 score['pp'],
@@ -74,6 +70,18 @@ class OsuAPIWrapper():
             score_array.append(formatted_score)
 
         return score_array
+
+    # concatenates the array of mods into a string; if the array is empty, returns the string 'NM'
+    # PARAMS: mods (array of string)
+    # RETURN: parsed mods (string)
+    def parse_mods(self, mods):
+        mod_string = ''
+        if not mods: 
+            mod_string = mod_string + 'NM'
+        else: 
+            for m in mods:
+                mod_string = mod_string + m
+        return mod_string
 
     # PARAMS: .csv file containing user IDs separated by newlines
     # RETURN: user IDs (array of int)
