@@ -66,16 +66,15 @@ class SheetsWrapper():
     #         first col (int), first row (int), num. cols used per mod (int),
     #         num. blank cols between mods (int)
     def scores_to_sheet(self, player_scores, worksheets, first_col, first_row, length, space):
-
         for k in player_scores:
-            print(f'Putting {k} scores in the sheet...')
+            print(f'Putting {k} scores in...')
             num_scores = str(len(player_scores[k]) + first_row - 1)
             str_vals = self.get_str_vals(k, num_scores, first_col, first_row, length, space)
             col_range = '%s%s:%s%s' % str_vals
             size = len(col_range)
             last_size = len(str_vals[3])
             clear_col_range = col_range[:size - last_size] + '10000'
-            # worksheets[(len(k)/2)-1].update(col_range, player_scores[k])
+            # worksheets[int((len(k)/2)-1)].update(col_range, player_scores[k])
             if len(k) == 2:
                 worksheets[0].batch_clear([clear_col_range])
                 worksheets[0].update(col_range, player_scores[k])
@@ -95,7 +94,7 @@ class SheetsWrapper():
     #         first col (int), first row (int), num. cols taken per mod (int),
     #         num. blank cols between mods (int)
     # RETURN: start column letter, start row num, end column letter, end row num (tuple: (str, int, str, int))
-    # TODO: this is a terrible method
+    # TODO: this is a terribly written method
     def get_str_vals(self, mods, num_scores, first_col, first_row, length, space):
         # https://docs.google.com/spreadsheets/d/1mXSpmGrdJukGwq5VpE9O9vuLJktu35mBR5TIHdK_Jl0/edit#gid=721483945 (by Magnus Cosmos)
         one = ['NM', 'DT', 'HR', 'HD', 'EZ', 'HT', 'FL']
