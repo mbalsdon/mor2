@@ -141,3 +141,12 @@ class SheetsWrapper():
     def update_last_updated_tag(self, main_worksheets):
         for worksheet in main_worksheets:
             worksheet.update('B6', f'LAST UPDATE: {date.today().strftime("%d %B %Y").upper()}')
+
+    # TODO: def
+    def lb_players_to_main_sheet(self, main_sheet, lb_players):
+        lb_array = []
+        for k in lb_players:
+            lb_array.append((k, lb_players[k]))
+        print(lb_array)
+        lb_array.sort(reverse=True, key=lambda s: s[1])
+        main_sheet.update('L6:M113', lb_array)

@@ -165,9 +165,23 @@ class OsuAPIWrapper():
         
         return new_dict
 
+    # TODO: def
     def submitted_to_archive(self, submitted_scores):
         archive_submitted_scores = []
         for score in submitted_scores:
             archive_submitted_scores.append((score[0], score[1], score[2], '', float(score[3]), 0))
         return archive_submitted_scores
     
+    # TODO: def
+    def get_lb_players(self,lb_scores):
+        lb_dict = {}
+        for score in lb_scores:
+            player = score[0]
+            if player == '' or player == '-':
+                continue
+            points = int(score[3])
+            if player in lb_dict:
+                lb_dict[player] = lb_dict[player] + points
+            else:
+                lb_dict[player] = points
+        return lb_dict

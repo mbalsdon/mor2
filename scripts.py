@@ -99,3 +99,20 @@ def submit(score_id):
         score_list.append([s[0], s[2], s[4]])
         score_list.sort(reverse=True, key=lambda sc: int(sc[2]))
         wks.update(col_range, score_list)
+
+# PARAMS: none
+# RETURN: none
+def update_leaderboard():
+    osu_api = OsuAPIWrapper()
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': f'Bearer {osu_api.token}'
+    }
+    sheets_api = SheetsWrapper()
+    main_sheet = sheets_api.get_mor_sheet()
+    main_worksheet = main_sheet.worksheet('Main')
+    leaderboard_scores = main_worksheet.get('E6:H113')
+    lb_players = osu_api.get_lb_players(leaderboard_scores)
+    print('Updating main sheet...')
+    sheets_api.lb_players_to_main_sheet(main_worksheet, lb_players)

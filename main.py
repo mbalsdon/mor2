@@ -1,6 +1,7 @@
 import sys
 from scripts import archive
 from scripts import submit
+from scripts import update_leaderboard
 
 if __name__ == '__main__':
     # TODO: this is scuffed but its good for now
@@ -27,5 +28,14 @@ if __name__ == '__main__':
                 print('argument should be a valid score ID.')
         else:
             print('Invalid submit arguments')
+
+    elif sys.argv[1] == 'updatelb':
+        if len(sys.argv) == 2:
+            update_leaderboard()
+        else:
+            print('There should be no arguments!')
+        
     else:
         print('Invalid arguments')
+    
+    
