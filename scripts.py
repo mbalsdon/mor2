@@ -1,7 +1,7 @@
 from datetime import date
 from OsuAPIWrapper import OsuAPIWrapper
 from SheetsWrapper import SheetsWrapper
-from pprint import pprint
+import time
 
 # PARAMS: email of archive sheet owner (str), should main sheet be updated? (boolean)
 # RETURN: none
@@ -19,24 +19,32 @@ def archive(email, update_main):
     user_email = email
     archive_sheet = sheets_api.create_sheet(sheet_title, user_email)
     archive_worksheets = sheets_api.init_mod_worksheets(archive_sheet)
+    main_sheet = sheets_api.get_mor_sheet()
+
+    submitted_worksheet = main_sheet.worksheet('Submitted Scores')
+    submitted_scores = submitted_worksheet.get('D6:G1000')
+    archive_submitted_scores = osu_api.submitted_to_archive(submitted_scores)
 
     # This is done after making the archive sheet to allow the sheets API to
     # "cool down" since there is a limit on requests per minute.
     print('Collecting and sorting player scores...')
     player_ids = osu_api.get_player_ids('testplayerlist.csv') # TODO: switch file
-    player_scores = osu_api.get_top_plays(player_ids, headers)
+    player_scores = osu_api.get_top_plays(player_ids, archive_submitted_scores, headers)
     
     print('Putting scores in the archive sheet...')
     sheets_api.scores_to_sheet(player_scores, archive_worksheets, 1, 2, 6, 1)
 
     if update_main == True:
         print('Putting scores in the main sheet...')
-        main_sheet = sheets_api.get_mor_sheet()
         main_worksheets = [main_sheet.worksheet('1MOD'),
                             main_sheet.worksheet('2MOD'),
                             main_sheet.worksheet('3MOD'),
                             main_sheet.worksheet('4MOD')]
         reformatted_player_scores = osu_api.archive_to_main(player_scores)
+        print('Waiting for sheets API to cool down...')
+        for i in range(6):
+            print('...')
+            time.sleep(5)
         sheets_api.scores_to_sheet(reformatted_player_scores, main_worksheets, 4, 8, 3, 1)
         sheets_api.update_last_updated_tag(main_worksheets)
 

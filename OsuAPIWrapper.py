@@ -97,13 +97,21 @@ class OsuAPIWrapper():
 
         return player_ids
 
-    # PARAMS: user IDs (array of int), valid osu!api v2 headers
+    # Puts top100s of each user into a dict, enumerated by mods and sorted by pp descending. If submitted_scores 
+    # exists, adds those to the dict as well.
+    # PARAMS: user IDs (array of int), extra scores (array of tuples defined in get_top_100_simple),
+    # valid osu!api v2 headers
     # RETURN: dict: keys = mod combos (str), vals = scores (array of tuples defined in get_top_100_simple)
-    def get_top_plays(self, player_ids, headers):
+    def get_top_plays(self, player_ids, submitted_scores, headers):
         scores = []
         for id in player_ids:
             print(f'Grabbing {id}\'s top plays...')
             scores.extend(self.get_top_100_simple(id, headers))
+
+        print(f'Inserting submitted scores...')
+        if submitted_scores is not None:
+            scores.extend(submitted_scores)
+
         scores.sort(reverse=True, key=lambda s: s[4])
         score_dict = {}
         for s in scores:
@@ -147,11 +155,19 @@ class OsuAPIWrapper():
             new_dict[k] = []
             for score in player_scores[k]:
                 player = score[0]
-                beatmap = '%s [%s]' % (score[2], score[3])
+                if score[2].find('https://osu.ppy.sh/scores/osu/') == -1:
+                    beatmap = '%s [%s]' % (score[2], score[3])
+                else:
+                    beatmap = score[2]
                 pp = round(score[4], 0)
                 score = (player, beatmap, pp)
                 new_dict[k].append(score)
         
         return new_dict
 
+    def submitted_to_archive(self, submitted_scores):
+        archive_submitted_scores = []
+        for score in submitted_scores:
+            archive_submitted_scores.append((score[0], score[1], score[2], '', float(score[3]), 0))
+        return archive_submitted_scores
     
