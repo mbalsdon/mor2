@@ -23,7 +23,10 @@ class OsuAPIWrapper():
     # PARAMS: osu! user ID (int), valid osu!api v2 headers
     # RETURN: the associated username (str)
     def get_username(self, user_id, headers):
-        response = requests.get(f'{self.API_URL}/users/{user_id}/osu', headers=headers)
+        params = {
+            'key': 'id'
+        }
+        response = requests.get(f'{self.API_URL}/users/{user_id}/osu', headers=headers, params=params)
         return response.json()['username']
 
     # PARAMS: osu! beatmap ID (int), valid osu!api v2 headers
@@ -185,3 +188,11 @@ class OsuAPIWrapper():
             else:
                 lb_dict[player] = points
         return lb_dict
+
+    # TODO: def
+    def get_user(self, username, headers):
+        params = {
+            'key': 'username'
+        }
+        response = requests.get(f'{self.API_URL}/users/{username}/osu', headers=headers, params=params)
+        return (response.json()['id'], response.json()['username'])

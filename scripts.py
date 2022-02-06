@@ -2,10 +2,11 @@ from datetime import date
 from OsuAPIWrapper import OsuAPIWrapper
 from SheetsWrapper import SheetsWrapper
 import time
+import csv
 
 # PARAMS: email of archive sheet owner (str), should main sheet be updated? (boolean)
 # RETURN: none
-def archive(email, update_main):
+def archive(email, ids_file, update_main, ):
     osu_api = OsuAPIWrapper()
     headers = {
         'Content-Type': 'application/json',
@@ -28,7 +29,7 @@ def archive(email, update_main):
     # This is done after making the archive sheet to allow the sheets API to
     # "cool down" since there is a limit on requests per minute.
     print('Collecting and sorting player scores...')
-    player_ids = osu_api.get_player_ids('testplayerlist.csv') # TODO: switch file
+    player_ids = osu_api.get_player_ids(ids_file)
     player_scores = osu_api.get_top_plays(player_ids, archive_submitted_scores, headers)
     
     print('Putting scores in the archive sheet...')
@@ -42,7 +43,7 @@ def archive(email, update_main):
                             main_sheet.worksheet('4MOD')]
         reformatted_player_scores = osu_api.archive_to_main(player_scores)
         print('Waiting for sheets API to cool down...')
-        for i in range(6):
+        for i in range(6): # TODO: magic numbers =D
             print('...')
             time.sleep(5)
         sheets_api.scores_to_sheet(reformatted_player_scores, main_worksheets, 4, 8, 3, 1)
@@ -116,3 +117,67 @@ def update_leaderboard():
     lb_players = osu_api.get_lb_players(leaderboard_scores)
     print('Updating main sheet...')
     sheets_api.lb_players_to_main_sheet(main_worksheet, lb_players)
+
+# PARAMS: .csv file containing usernames separated by newlines
+# RETURN: none
+def generate_usernames(filepath):
+    osu_api = OsuAPIWrapper()
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': f'Bearer {osu_api.token}'
+    }
+    players = []
+    non_matched_usernames = []
+    with open(filepath, mode='r', newline='\n') as usernames_file:
+        username_reader = csv.reader(usernames_file, delimiter=',')
+        for row in username_reader:
+            # Skip comment rows
+            if row[0].startswith('#'):
+                continue
+            try:
+                player_info = osu_api.get_user(row[0], headers)
+                print('Found ID given username ' + row[0])
+                if player_info[1] == row[0]:
+                    players.append(player_info)
+                else:
+                    print('Searched player did not match given username \'' + row[0] + '\'')
+                    non_matched_usernames.append(row[0] + ' - search returned \'' + player_info[1] + '\'')
+            except KeyError:
+                print('Couldn\'t find ID given username \'' + row[0] + '\'')
+                non_matched_usernames.append(row[0] + ' - no results returned from search')
+                continue
+
+    with open('generated_playerlist.csv', mode='w', newline='\n') as playerlist_file:
+        player_writer = csv.writer(playerlist_file, delimiter=',')
+        for p in players:
+            player_writer.writerow([p[0], p[1]])
+
+    with open('non_matched_usernames.csv', mode='w', newline='\n') as nmu_file:
+        nmu_writer = csv.writer(nmu_file, delimiter=',')
+        for nmu_string in non_matched_usernames:
+            nmu_writer.writerow([nmu_string])
+
+# PARAMS: .csv file separated by newlines
+# RETURNS: none
+def remove_dupes(filepath):
+    rows = []
+    with open(filepath, mode='r', newline='\n') as dupes_file:
+        dupes_reader = csv.reader(dupes_file, delimiter=',')
+        for row in dupes_reader:
+            # Skip comment rows
+            if row[0].startswith('#'):
+                continue
+            rows.append(row)
+    
+    result = []
+    for r in rows:
+        if r not in result:
+            result.append(r)
+        else:
+            print('Found dupe ' + str(r))
+
+    with open(filepath, mode='w', newline='\n') as new_file:
+        new_writer = csv.writer(new_file, delimiter=',')
+        for r in result:
+            new_writer.writerow(r)
