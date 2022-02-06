@@ -149,4 +149,4 @@ class SheetsWrapper():
             lb_array.append((k, lb_players[k]))
         print(lb_array)
         lb_array.sort(reverse=True, key=lambda s: s[1])
-        main_sheet.update('L6:M113', lb_array)
+        main_sheet.update('L5:M112', lb_array)

@@ -16,6 +16,7 @@ if __name__ == '__main__':
                 if sys.argv[3].rfind('.csv') > 0:
                     if sys.argv[4].lower() == 'true':
                         archive(sys.argv[2], sys.argv[3], True)
+                        print('! Remember to update the leaderboard !')
                     elif sys.argv[4].lower() == 'false':
                         archive(sys.argv[2], sys.argv[3], False)
                     else:
@@ -32,6 +33,7 @@ if __name__ == '__main__':
             try:
                 id = int(sys.argv[2])
                 submit(int(sys.argv[2]))
+                print('! Remember to update the leaderboard !')
             except ValueError:
                 print('argument should be a valid score ID.')
         else:

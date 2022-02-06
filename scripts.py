@@ -77,7 +77,6 @@ def submit(score_id):
             int(round(score['pp'], 0))]
 
     print(f'Adding score {s} to the "Submitted Scores" sheet...')
-
     num_submitted = len(submitted_worksheet.get('D6:G1000'))
     row = num_submitted + 6
     submitted_worksheet.update(f'D{row}:G{row}', [[s[0], s[1], s[3], s[4]]])
@@ -97,7 +96,7 @@ def submit(score_id):
             index = score_list.index([])
             score_list.pop(index)
         # The list is already sorted, so O(n) is possible using insert, however I am lazy :)
-        score_list.append([s[0], s[2], s[4]])
+        score_list.append([s[0], s[3], s[4]])
         score_list.sort(reverse=True, key=lambda sc: int(sc[2]))
         wks.update(col_range, score_list)
 
@@ -113,7 +112,7 @@ def update_leaderboard():
     sheets_api = SheetsWrapper()
     main_sheet = sheets_api.get_mor_sheet()
     main_worksheet = main_sheet.worksheet('Main')
-    leaderboard_scores = main_worksheet.get('E6:H113')
+    leaderboard_scores = main_worksheet.get('E5:H112')
     lb_players = osu_api.get_lb_players(leaderboard_scores)
     print('Updating main sheet...')
     sheets_api.lb_players_to_main_sheet(main_worksheet, lb_players)
